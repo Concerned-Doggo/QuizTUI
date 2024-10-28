@@ -2,18 +2,28 @@ package apicall
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"net/http"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
+type QuestionList struct {
+    ResponseCode int `json:"response_code,omitempty"`
+    Results      []Question `json:"results,omitempty"`
+}
 
-func Question(category string)([]map[string]interface{}){
-    godotenv.Load()
-    API_KEY := os.Getenv("API_KEY")
-    apiUrl := "https://quizapi.io/api/v1/questions?apiKey=" + API_KEY + "&limit=5&category=" + category
+type Question struct {
+    Type             string   `json:"type,omitempty"`
+    Difficulty       string   `json:"difficulty,omitempty"`
+    Category         string   `json:"category,omitempty"`
+    Question         string   `json:"question,omitempty"`
+    CorrectAnswer    string   `json:"correct_answer,omitempty"`
+    IncorrectAnswers []string `json:"incorrect_answers,omitempty"`
+
+}
+
+
+func GetData()(QuestionList){
+    apiUrl := "https://opentdb.com/api.php?amount=5&category=18&difficulty=easy&type=multiple"
 
     res, err := http.Get(apiUrl)
     if err != nil {
@@ -21,12 +31,11 @@ func Question(category string)([]map[string]interface{}){
     }
     defer res.Body.Close()
 
-    var data []map[string]interface{}
+    var data QuestionList
     json.NewDecoder(res.Body).Decode(&data)
 
-    // for pretty printing json data in the terminal
-    // jsonBytes, _ := json.MarshalIndent(data, "", "   ")
-    // fmt.Println(string(jsonBytes))
-    fmt.Println()
+    // prettyData, _ := json.MarshalIndent(data, "", "   ")
+    // fmt.Println(string(prettyData))
+
     return data
 }

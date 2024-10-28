@@ -1,97 +1,75 @@
 package myform
 
 import (
-    "fmt"
+	"math/rand"
 
-    "github.com/charmbracelet/huh"
+	"github.com/charmbracelet/huh"
+	apicall "github.com/concerned-doggo/quizTUI/APICall"
 )
 
-func getOptions(data []map[string]interface{}) ([]map[string]interface{}, []map[string]interface{}) {
 
-    var answerList []map[string]interface{}
-    var correctAnswerList []map[string]interface{}
+func getOptions(data apicall.QuestionList) ([][]string, [][]bool){
+    var options  [][]string
+    var correctAns  [][]bool
 
-    for i := 0; i < len(data); i++ {
-        answerList = append(answerList, data[i]["answers"].(map[string]interface{}))
-        correctAnswerList = append(correctAnswerList, data[i]["correct_answers"].(map[string]interface{}))
+    for i := 0; i < len(data.Results); i++ {
+        answers := append([]string{data.Results[i].CorrectAnswer}, data.Results[i].IncorrectAnswers...)
+        x := shuffleOptions(answers)
+        options = append(options, x)
+
+        var tempCorrectAns [4]bool
+        for j:= 0; j < len(x); j++{
+            tempCorrectAns[j] = x[j] == data.Results[i].CorrectAnswer
+        }
+
+        correctAns = append(correctAns, tempCorrectAns[:])
     }
+    return options, correctAns
+}
 
-    return answerList, correctAnswerList
+func shuffleOptions(options []string) ([]string){
+
+    rand.Shuffle(len(options), func(i, j int){
+        options[i], options[j] = options[j], options[i]
+    })
+
+    return options
 }
 
 
-func MakeForm(data []map[string]interface{}) (){
-    fmt.Println("this is fine")
+func getQuestions(data apicall.QuestionList) ([]string){
+    var questions []string
+    for i := 0; i < len(data.Results); i++ {
+        questions = append(questions, data.Results[i].Question)
+    }
+    return questions
+}
 
-    // answers := data[0]["answers"].(map[string]interface{})
-    answerList, correctAnswerList := getOptions(data)
-    
+func MakeForm() (int){
+    data := apicall.GetData()
+    options, correctAns := getOptions(data)
+    questions := getQuestions(data)
+    var userResponse [5]bool
 
-    var userResponse [5]string
-    form := huh.NewForm(
-        huh.NewGroup(
-            huh.NewSelect[string]().
-                Title(data[0]["question"].(string)).
-                Options(
-                huh.NewOption(answerList[0]["answer_a"].(string), correctAnswerList[0]["answer_a_correct"].(string)),
-                huh.NewOption(answerList[0]["answer_b"].(string), correctAnswerList[0]["answer_b_correct"].(string)),
-                huh.NewOption(answerList[0]["answer_c"].(string), correctAnswerList[0]["answer_c_correct"].(string)),
-                huh.NewOption(answerList[0]["answer_d"].(string), correctAnswerList[0]["answer_d_correct"].(string)),
-                ).
-                Value(&userResponse[0]),
+    for i := 0; i < len(questions); i++ {
+        huh.NewSelect[bool]().
+            Title(questions[i]).
+            Options(
+            huh.NewOption(options[i][0], correctAns[i][0]),
+            huh.NewOption(options[i][1], correctAns[i][1]),
+            huh.NewOption(options[i][2], correctAns[i][2]),
+            huh.NewOption(options[i][3], correctAns[i][3]),
+            ).
+            Value(&userResponse[i]).
+            Run()
+    }
 
-            huh.NewSelect[string]().
-                Title(data[1]["question"].(string)).
-                Options(
-
-                huh.NewOption(answerList[1]["answer_a"].(string), correctAnswerList[1]["answer_a_correct"].(string)),
-                huh.NewOption(answerList[1]["answer_b"].(string), correctAnswerList[1]["answer_b_correct"].(string)),
-                huh.NewOption(answerList[1]["answer_c"].(string), correctAnswerList[1]["answer_c_correct"].(string)),
-                huh.NewOption(answerList[1]["answer_d"].(string), correctAnswerList[1]["answer_d_correct"].(string)),
-                ).
-                Value(&userResponse[1]),
-
-            huh.NewSelect[string]().
-                Title(data[2]["question"].(string)).
-                Options(
-
-
-                huh.NewOption(answerList[2]["answer_a"].(string), correctAnswerList[2]["answer_a_correct"].(string)),
-                huh.NewOption(answerList[2]["answer_b"].(string), correctAnswerList[2]["answer_b_correct"].(string)),
-                huh.NewOption(answerList[2]["answer_c"].(string), correctAnswerList[2]["answer_c_correct"].(string)),
-                huh.NewOption(answerList[2]["answer_d"].(string), correctAnswerList[2]["answer_d_correct"].(string)),
-                ).
-                Value(&userResponse[2]),
-
-            huh.NewSelect[string]().
-                Title(data[3]["question"].(string)).
-                Options(
-                huh.NewOption(answerList[3]["answer_a"].(string), correctAnswerList[3]["answer_a_correct"].(string)),
-                huh.NewOption(answerList[3]["answer_b"].(string), correctAnswerList[3]["answer_b_correct"].(string)),
-                huh.NewOption(answerList[3]["answer_c"].(string), correctAnswerList[3]["answer_c_correct"].(string)),
-                huh.NewOption(answerList[3]["answer_d"].(string), correctAnswerList[3]["answer_d_correct"].(string)),
-                ).
-                Value(&userResponse[3]),
-
-            huh.NewSelect[string]().
-                Title(data[4]["question"].(string)).
-                Options(
-                huh.NewOption(answerList[4]["answer_a"].(string), correctAnswerList[4]["answer_a_correct"].(string)),
-                huh.NewOption(answerList[4]["answer_b"].(string), correctAnswerList[4]["answer_b_correct"].(string)),
-                huh.NewOption(answerList[4]["answer_c"].(string), correctAnswerList[4]["answer_c_correct"].(string)),
-                huh.NewOption(answerList[4]["answer_d"].(string), correctAnswerList[4]["answer_d_correct"].(string)),
-                ).
-                Value(&userResponse[4]),
-
-            ),
-        )
-    form.Run()
 
     var totalScore int
     for i := 0; i < len(userResponse); i++ {
-        if userResponse[i] == "true" {
+        if userResponse[i] {
             totalScore++;
         }
     }
-    fmt.Println("Your total score is: ", totalScore)
+    return totalScore
 }

@@ -2,36 +2,26 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
-	"github.com/charmbracelet/huh"
-	apicall "github.com/concerned-doggo/quizTUI/APICall"
+	"github.com/charmbracelet/lipgloss"
 	myform "github.com/concerned-doggo/quizTUI/MyForm"
 )
 
 
-
 func main() {
-    fmt.Println("ready to go")
+    result := myform.MakeForm()
+   
 
-    var category string
-    form := huh.NewForm(
-        huh.NewGroup(
-            // Ask the user for a base burger and toppings.
-            huh.NewSelect[string]().
-                Title("Choose your Category").
-                Options(
-                huh.NewOption("Linux", "linux"),
-                huh.NewOption("Code", "code"),
-                huh.NewOption("Bash", "bash"),
-                huh.NewOption("MySql", "sql"),
-                ).
-                Value(&category),
-            ),
-        )
-    form.Run()
+    var titleStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("#7D56F4")).
+        PaddingRight(1)
+    var resultStyle = lipgloss.NewStyle().
+        Bold(true).
+        Foreground(lipgloss.Color("#FAFAFA"))
 
-    data := apicall.Question(category)
-
-    myform.MakeForm(data)
-
+    fmt.Print(titleStyle.Render("Your Score is"))
+    fmt.Println(resultStyle.Render(strconv.Itoa(result) + " / 5" ))
 }
+
